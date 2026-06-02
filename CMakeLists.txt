@@ -11,6 +11,7 @@ endif()
 
 option(EMCAST_BUILD_TESTS "Build the emcast test suite" ON)
 option(EMCAST_BUILD_CLI   "Build the emcast command-line tool" ON)
+option(EMCAST_BUILD_BENCH "Build the BER-vs-SNR benchmark tool" ON)
 
 include(FetchContent)
 
@@ -35,7 +36,9 @@ add_library(emcast STATIC
   src/reed_solomon.cpp
   src/frame.cpp
   src/goertzel.cpp
+  src/modem_common.cpp
   src/bfsk.cpp
+  src/ook.cpp
   src/awgn.cpp
   src/wav_channel.cpp
   src/impl_dr_wav.cpp
@@ -63,17 +66,24 @@ elseif(APPLE)
     "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox")
 endif()
 
-# ---- CLI --------------------------------------------------------------------
-if(EMCAST_BUILD_CLI)
+# ---- CLI11 (shared by the CLI and the benchmark) ----------------------------
+if(EMCAST_BUILD_CLI OR EMCAST_BUILD_BENCH)
   FetchContent_Declare(CLI11
     GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
     GIT_TAG v2.4.2
     GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(CLI11)
+endif()
 
+if(EMCAST_BUILD_CLI)
   add_executable(emcast_cli apps/cli/main.cpp)
   set_target_properties(emcast_cli PROPERTIES OUTPUT_NAME emcast)
   target_link_libraries(emcast_cli PRIVATE emcast::emcast CLI11::CLI11)
+endif()
+
+if(EMCAST_BUILD_BENCH)
+  add_executable(emcast_bench bench/ber_sweep.cpp)
+  target_link_libraries(emcast_bench PRIVATE emcast::emcast CLI11::CLI11)
 endif()
 
 # ---- Tests ------------------------------------------------------------------
@@ -92,7 +102,8 @@ if(EMCAST_BUILD_TESTS)
     tests/test_reed_solomon.cpp
     tests/test_frame.cpp
     tests/test_goertzel.cpp
-    tests/test_roundtrip.cpp)
+    tests/test_roundtrip.cpp
+    tests/test_schemes.cpp)
   target_link_libraries(emcast_tests PRIVATE emcast::emcast Catch2::Catch2WithMain)
   if(MSVC)
     target_compile_definitions(emcast_tests PRIVATE _USE_MATH_DEFINES)

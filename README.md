@@ -51,6 +51,9 @@ On Windows, run the above from a *Developer PowerShell for VS 2022* (or use the
 emcast send  photo.jpg --out signal.wav
 emcast recv  signal.wav --out recovered.jpg
 
+# Choose a modulation scheme (bfsk = default/robust, ook = simpler).
+emcast send  photo.jpg --scheme ook --out signal.wav
+
 # Prove reliability over a simulated noisy channel (encode → AWGN → decode).
 emcast loopback photo.jpg --snr 8
 
@@ -86,7 +89,7 @@ if (rx.decode_samples(in, out) == emcast::DecodeStatus::Ok) {
 |-------|--------------|
 | **Framing** | Wraps the payload with a magic marker, version, file name, length, a header CRC-32 and a payload CRC-32. |
 | **FEC** | Reed–Solomon over GF(2⁸). The default RS(255,223) corrects up to **16 corrupted bytes in every 255-byte block**. |
-| **Modulation** | Binary FSK: a `1` is the *mark* tone, a `0` the *space* tone, sent with continuous phase. Default 1000 baud at 48 kHz. |
+| **Modulation** | Pluggable schemes behind one interface: **BFSK** (default — mark/space tones, robust) and **OOK** (gated single tone). Default 1000 baud at 48 kHz; select with `--scheme`. |
 | **Sync** | An alternating preamble for gain/timing, then a 32-bit CCSDS sync marker located by correlation. |
 | **Demod** | Goertzel tone-power detection per symbol (cheaper than an FFT), with signal-start detection and symbol-timing search for live audio. |
 
@@ -108,12 +111,16 @@ bit errors:
 
 *(Reproduce with `emcast loopback examples/x-files.jpg --snr <dB>`.)*
 
+For systematic BER-vs-SNR curves across schemes, see
+[`docs/benchmarks.md`](docs/benchmarks.md) and the `emcast_bench` tool.
+
 ## Roadmap
 
-- **v1 (this release):** framing + CRC + Reed–Solomon, BFSK modem, WAV / AWGN /
-  live-audio channels, CLI, test suite, CI.
-- **v2:** additional schemes (OOK, BPSK/QPSK, multitone), RRC pulse shaping,
-  Gardner timing recovery, BER-vs-SNR benchmark plots, installable packages.
+- **v1:** framing + CRC + Reed–Solomon, BFSK modem, WAV / AWGN / live-audio
+  channels, CLI, test suite, CI. ✅
+- **v2 (in progress):** pluggable modulation schemes (BFSK + OOK ✅), BER-vs-SNR
+  benchmark suite ✅; next: BPSK/QPSK & multitone, RRC pulse shaping, Gardner
+  timing recovery, installable packages.
 - **v3:** SDR/RF channel, live visualization demo, fuzzing, tagged 1.0 release.
 
 ## License

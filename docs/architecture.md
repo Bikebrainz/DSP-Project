@@ -42,12 +42,19 @@ checked twice: a header CRC and a payload CRC.
   window at one frequency. Tones are placed exactly on Goertzel bins
   (`freq = k · sample_rate / samples_per_symbol`) so the two tones are
   orthogonal and detection is well-conditioned.
-- **`Bfsk`** — binary FSK modulator/demodulator. The modulator emits an
-  alternating preamble, a 32-bit CCSDS sync marker, then the frame bits, using
-  continuous phase to avoid spectral splatter. The demodulator normalizes the
-  input, detects the signal start by short-time energy, searches symbol-timing
-  offsets, makes a per-symbol tone decision, then locates the sync marker (with
-  a small error tolerance) to byte-align the stream.
+- **`Modem`** — abstract interface (`modulate` / `demodulate`); construct a
+  concrete scheme with `make_modem(Scheme, ModemConfig)`. All schemes share the
+  same bit-level framing (preamble + 32-bit sync + frame bytes) and the demod
+  scaffolding (normalize → signal-start detection → symbol-timing search → sync
+  search → byte packing), factored into `src/modem_common.cpp`. Only symbol
+  rendering and the per-symbol bit decision differ per scheme.
+- **`Bfsk`** — binary FSK: a `1` is the mark tone, a `0` the space tone, with
+  continuous phase. The decision compares the two tone energies (amplitude
+  agnostic). The robust default.
+- **`Ook`** — on-off keying: the mark tone is gated on for a `1`, off for a `0`.
+  The receiver thresholds per-symbol energy adaptively. Simpler but amplitude
+  sensitive, so it needs ~8 dB more SNR than BFSK (see
+  [`benchmarks.md`](benchmarks.md)).
 
 ### `channel.hpp` — transports
 - **`add_awgn`** — additive white Gaussian noise at a target SNR; deterministic
