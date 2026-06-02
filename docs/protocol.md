@@ -13,9 +13,15 @@ Emitted by `Bfsk::modulate`, in order:
 | Sync marker | 32 bits | CCSDS Attached Sync Marker `0x1ACFFC1D`; byte-aligns the stream. Located by correlation, tolerating ≤ 2 bit errors. |
 | Frame bytes | variable | The RS-coded message below, MSB first. |
 
-Each bit is one BFSK symbol: a `1` is the **mark** tone (default 3000 Hz), a `0`
-is the **space** tone (default 2000 Hz), held for `samples_per_symbol` samples
-(default 48 → 1000 baud at 48 kHz), with continuous phase across symbols.
+Each bit is one symbol, held for `samples_per_symbol` samples (default 48 →
+1000 baud at 48 kHz), with continuous phase across symbols. How a bit maps to a
+symbol depends on the scheme:
+
+- **BFSK** (default): a `1` is the **mark** tone (default 3000 Hz), a `0` is the
+  **space** tone (default 2000 Hz).
+- **OOK**: the mark tone is gated **on** for a `1` and **off** for a `0`.
+
+Both ends must use the same scheme (`--scheme`).
 
 ## Byte-level message (application layer)
 

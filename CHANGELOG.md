@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Pluggable modulation schemes behind a `Modem` interface with a `make_modem`
+  factory; shared framing/sync/timing scaffolding in `modem_common`.
+- **OOK** (on-off keying) scheme alongside BFSK, selectable via `--scheme`.
+- `emcast_bench` BER-vs-SNR benchmark tool (CSV output) and
+  `docs/benchmarks.md` with representative results.
+- Round-trip tests for every scheme.
+
 ## [1.0.0] — unreleased
 
 The project was rebuilt from a 2023 proof-of-concept into a full data-over-signal

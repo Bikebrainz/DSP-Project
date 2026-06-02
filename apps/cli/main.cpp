@@ -17,6 +17,7 @@ namespace {
 
 // Physical-layer options shared by every subcommand.
 struct ModemOptions {
+    std::string scheme = "bfsk";
     std::uint32_t sample_rate = 48000;
     std::uint32_t samples_per_symbol = 48;
     double freq_space = 2000.0;
@@ -32,9 +33,17 @@ struct ModemOptions {
         cfg.preamble_bits = preamble;
         return cfg;
     }
+
+    emcast::Scheme to_scheme() const {
+        emcast::Scheme s;
+        if (!emcast::scheme_from_string(scheme, s))
+            throw emcast::Error("unknown scheme: " + scheme + " (expected bfsk|ook)");
+        return s;
+    }
 };
 
 void add_modem_options(CLI::App* app, ModemOptions& o) {
+    app->add_option("--scheme", o.scheme, "Modulation scheme (bfsk|ook)")->capture_default_str();
     app->add_option("--sample-rate", o.sample_rate, "Sample rate (Hz)")->capture_default_str();
     app->add_option("--sps", o.samples_per_symbol, "Samples per symbol")->capture_default_str();
     app->add_option("--freq-space", o.freq_space, "Tone for bit 0 (Hz)")->capture_default_str();
@@ -111,9 +120,10 @@ int main(int argc, char** argv) {
 
     try {
         const emcast::ModemConfig cfg = mo.to_config();
+        const emcast::Scheme scheme = mo.to_scheme();
 
         if (*send) {
-            emcast::Transmitter t(cfg);
+            emcast::Transmitter t(cfg, scheme);
             emcast::Samples wave = t.encode_file(send_in);
             emcast::write_wav(send_out, wave, cfg.sample_rate);
             std::cout << "Encoded " << send_in << " -> " << send_out << " ("
@@ -122,7 +132,7 @@ int main(int argc, char** argv) {
         } else if (*recv) {
             std::uint32_t sr = 0;
             emcast::Samples wave = emcast::read_wav(recv_in, sr);
-            emcast::Receiver r(cfg);
+            emcast::Receiver r(cfg, scheme);
             std::string name;
             emcast::DecodeStatus st = r.decode_to_file(wave, recv_out, &name);
             std::cout << "Decode status: " << emcast::to_string(st) << "\n";
@@ -131,7 +141,7 @@ int main(int argc, char** argv) {
             if (!name.empty()) std::cout << " (original name: " << name << ")";
             std::cout << "\n";
         } else if (*tx) {
-            emcast::Transmitter t(cfg);
+            emcast::Transmitter t(cfg, scheme);
             emcast::Samples wave = t.encode_file(tx_in);
             std::cout << "Transmitting " << tx_in << " ("
                       << static_cast<double>(wave.size()) / cfg.sample_rate
@@ -141,7 +151,7 @@ int main(int argc, char** argv) {
         } else if (*rx) {
             std::cout << "Listening for " << rx_seconds << " s...\n";
             emcast::Samples wave = emcast::record_audio(rx_seconds, cfg.sample_rate);
-            emcast::Receiver r(cfg);
+            emcast::Receiver r(cfg, scheme);
             std::string name;
             emcast::DecodeStatus st = r.decode_to_file(wave, rx_out, &name);
             std::cout << "Decode status: " << emcast::to_string(st) << "\n";
@@ -151,19 +161,19 @@ int main(int argc, char** argv) {
             std::cout << "\n";
         } else if (*loop) {
             emcast::Bytes payload = emcast::read_file(loop_in);
-            emcast::Transmitter t(cfg);
+            emcast::Transmitter t(cfg, scheme);
             emcast::Samples wave = t.encode_bytes(payload, loop_in);
             emcast::Samples channel =
                 (loop_snr < 1e8) ? emcast::add_awgn(wave, loop_snr) : wave;
 
-            emcast::Receiver r(cfg);
+            emcast::Receiver r(cfg, scheme);
             emcast::FrameInfo got;
             emcast::DecodeStatus st = r.decode_samples(channel, got);
 
             // Raw (pre-FEC) error estimate: compare demodulated vs transmitted frame.
-            emcast::Bfsk modem(cfg);
+            auto modem = emcast::make_modem(scheme, cfg);
             emcast::Bytes tx_frame = emcast::encode_frame(payload, loop_in);
-            emcast::Bytes rx_frame = modem.demodulate(channel);
+            emcast::Bytes rx_frame = modem->demodulate(channel);
             int raw_bit_err = count_bit_errors(tx_frame, rx_frame);
             std::size_t tx_bits = tx_frame.size() * 8;
 
@@ -189,7 +199,7 @@ int main(int argc, char** argv) {
             std::cout << "Samples       : " << wave.size() << "\n";
             std::cout << "Duration      : " << static_cast<double>(wave.size()) / (sr ? sr : 1)
                       << " s\n";
-            emcast::Receiver r(cfg);
+            emcast::Receiver r(cfg, scheme);
             emcast::FrameInfo fi;
             emcast::DecodeStatus st = r.decode_samples(wave, fi);
             std::cout << "Frame status  : " << emcast::to_string(st) << "\n";
