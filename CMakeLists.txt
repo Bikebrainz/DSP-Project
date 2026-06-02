@@ -1,0 +1,101 @@
+cmake_minimum_required(VERSION 3.16)
+project(emcast VERSION 1.0.0 LANGUAGES CXX)
+
+# ---- Standard / options -----------------------------------------------------
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+endif()
+
+option(EMCAST_BUILD_TESTS "Build the emcast test suite" ON)
+option(EMCAST_BUILD_CLI   "Build the emcast command-line tool" ON)
+
+include(FetchContent)
+
+# ---- Header-only third-party libraries (downloaded, no sub-targets) ---------
+# The SOURCE_SUBDIR trick populates the repo without adding its own CMake targets.
+FetchContent_Declare(miniaudio
+  GIT_REPOSITORY https://github.com/mackron/miniaudio.git
+  GIT_TAG 0.11.21
+  GIT_SHALLOW TRUE
+  SOURCE_SUBDIR  do-not-add-subdir)
+FetchContent_Declare(drlibs
+  GIT_REPOSITORY https://github.com/mackron/dr_libs.git
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+  SOURCE_SUBDIR  do-not-add-subdir)
+FetchContent_MakeAvailable(miniaudio drlibs)
+
+# ---- Core library -----------------------------------------------------------
+add_library(emcast STATIC
+  src/types.cpp
+  src/crc32.cpp
+  src/reed_solomon.cpp
+  src/frame.cpp
+  src/goertzel.cpp
+  src/bfsk.cpp
+  src/awgn.cpp
+  src/wav_channel.cpp
+  src/impl_dr_wav.cpp
+  src/audio_channel.cpp
+  src/impl_miniaudio.cpp
+  src/emcast.cpp)
+add_library(emcast::emcast ALIAS emcast)
+
+target_include_directories(emcast PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(emcast PRIVATE ${miniaudio_SOURCE_DIR} ${drlibs_SOURCE_DIR})
+
+if(MSVC)
+  target_compile_definitions(emcast PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES)
+  target_compile_options(emcast PRIVATE /W4)
+else()
+  target_compile_options(emcast PRIVATE -Wall -Wextra)
+endif()
+
+# Platform audio backends required by miniaudio.
+if(UNIX AND NOT APPLE)
+  find_package(Threads REQUIRED)
+  target_link_libraries(emcast PRIVATE Threads::Threads ${CMAKE_DL_LIBS} m)
+elseif(APPLE)
+  target_link_libraries(emcast PRIVATE
+    "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox")
+endif()
+
+# ---- CLI --------------------------------------------------------------------
+if(EMCAST_BUILD_CLI)
+  FetchContent_Declare(CLI11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG v2.4.2
+    GIT_SHALLOW TRUE)
+  FetchContent_MakeAvailable(CLI11)
+
+  add_executable(emcast_cli apps/cli/main.cpp)
+  set_target_properties(emcast_cli PROPERTIES OUTPUT_NAME emcast)
+  target_link_libraries(emcast_cli PRIVATE emcast::emcast CLI11::CLI11)
+endif()
+
+# ---- Tests ------------------------------------------------------------------
+if(EMCAST_BUILD_TESTS)
+  enable_testing()
+  FetchContent_Declare(Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.5.2
+    GIT_SHALLOW TRUE)
+  FetchContent_MakeAvailable(Catch2)
+  list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+  include(Catch)
+
+  add_executable(emcast_tests
+    tests/test_crc.cpp
+    tests/test_reed_solomon.cpp
+    tests/test_frame.cpp
+    tests/test_goertzel.cpp
+    tests/test_roundtrip.cpp)
+  target_link_libraries(emcast_tests PRIVATE emcast::emcast Catch2::Catch2WithMain)
+  if(MSVC)
+    target_compile_definitions(emcast_tests PRIVATE _USE_MATH_DEFINES)
+  endif()
+  catch_discover_tests(emcast_tests)
+endif()

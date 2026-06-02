@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/), and this project adheres to
+[Semantic Versioning](https://semver.org/).
+
+## [1.0.0] — unreleased
+
+The project was rebuilt from a 2023 proof-of-concept into a full data-over-signal
+transmission toolkit.
+
+### Added
+- Layered modem stack: framing, Reed–Solomon FEC, BFSK modulation, Goertzel
+  demodulation with preamble + CCSDS sync.
+- `ReedSolomon` codec over GF(2⁸); default RS(255,223) corrects 16 byte errors
+  per block.
+- CRC-32 integrity checks on both the header and the payload.
+- Channels: WAV file I/O (dr_wav), AWGN simulator, real speaker/microphone I/O
+  (miniaudio).
+- `Transmitter` / `Receiver` SDK facade and a `read_file`/`write_file` helper.
+- `emcast` CLI: `send`, `recv`, `tx`, `rx`, `loopback`, `info`.
+- Catch2 test suite (CRC, RS, framing, Goertzel, end-to-end round-trip through
+  AWGN) and GitHub Actions CI across Linux, macOS and Windows.
+- CMake build with automatic dependency fetching and presets.
+
+### Changed
+- The original 2023 C prototype is preserved under `legacy/`.
+- Removed committed build artifacts and the multi-megabyte text waveform dumps.
