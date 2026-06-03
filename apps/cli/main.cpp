@@ -129,6 +129,14 @@ int main(int argc, char** argv) {
     info->add_option("input", info_in, "Input WAV")->required()->check(CLI::ExistingFile);
     add_modem_options(info, mo);
 
+    // spectrogram
+    auto* spec = app.add_subcommand("spectrogram", "Render a WAV's spectrogram to a PNG");
+    std::string spec_in, spec_out = "spectrogram.png";
+    std::size_t spec_fft = 512;
+    spec->add_option("input", spec_in, "Input WAV")->required()->check(CLI::ExistingFile);
+    spec->add_option("-o,--out", spec_out, "Output PNG")->capture_default_str();
+    spec->add_option("--fft", spec_fft, "FFT size")->capture_default_str();
+
     CLI11_PARSE(app, argc, argv);
 
     try {
@@ -221,6 +229,9 @@ int main(int argc, char** argv) {
                 std::cout << "Embedded name : " << (fi.filename.empty() ? "(none)" : fi.filename)
                           << "\n";
             }
+        } else if (*spec) {
+            emcast::write_spectrogram_png(spec_in, spec_out, spec_fft);
+            std::cout << "Wrote spectrogram " << spec_out << "\n";
         }
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << "\n";

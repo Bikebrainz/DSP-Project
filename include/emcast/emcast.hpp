@@ -14,6 +14,7 @@
 
 #include <string>
 
+#include "emcast/analysis.hpp"
 #include "emcast/channel.hpp"
 #include "emcast/fec.hpp"
 #include "emcast/frame.hpp"

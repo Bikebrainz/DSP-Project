@@ -23,6 +23,9 @@ All notable changes to this project are documented here. The format is based on
   carrier, via a new complex single-bin DFT `goertzel_iq`) and **MFSK** (4-ary
   FSK). DQPSK and MFSK carry 2 bits/symbol (double throughput). Shared receiver
   timing search factored into `search_and_pack`.
+- Spectrogram analysis (`compute_spectrogram`), an `emcast spectrogram` command
+  that writes a colormapped PNG (stb_image_write), and a zero-dependency browser
+  viewer at `demo/index.html` (waveform + live spectrogram, client-side).
 
 ## [1.0.0] — unreleased
 

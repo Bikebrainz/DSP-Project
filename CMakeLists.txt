@@ -27,7 +27,12 @@ FetchContent_Declare(drlibs
   GIT_TAG master
   GIT_SHALLOW TRUE
   SOURCE_SUBDIR  do-not-add-subdir)
-FetchContent_MakeAvailable(miniaudio drlibs)
+FetchContent_Declare(stb
+  GIT_REPOSITORY https://github.com/nothings/stb.git
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+  SOURCE_SUBDIR  do-not-add-subdir)
+FetchContent_MakeAvailable(miniaudio drlibs stb)
 
 # ---- Core library -----------------------------------------------------------
 add_library(emcast STATIC
@@ -46,13 +51,15 @@ add_library(emcast STATIC
   src/impl_dr_wav.cpp
   src/audio_channel.cpp
   src/impl_miniaudio.cpp
+  src/analysis.cpp
+  src/impl_stb_image_write.cpp
   src/emcast.cpp)
 add_library(emcast::emcast ALIAS emcast)
 
 target_include_directories(emcast PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_include_directories(emcast PRIVATE ${miniaudio_SOURCE_DIR} ${drlibs_SOURCE_DIR})
+target_include_directories(emcast PRIVATE ${miniaudio_SOURCE_DIR} ${drlibs_SOURCE_DIR} ${stb_SOURCE_DIR})
 
 if(MSVC)
   target_compile_definitions(emcast PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _USE_MATH_DEFINES)
@@ -109,7 +116,8 @@ if(EMCAST_BUILD_TESTS)
     tests/test_goertzel.cpp
     tests/test_roundtrip.cpp
     tests/test_schemes.cpp
-    tests/test_robustness.cpp)
+    tests/test_robustness.cpp
+    tests/test_analysis.cpp)
   target_link_libraries(emcast_tests PRIVATE emcast::emcast Catch2::Catch2WithMain)
   if(MSVC)
     target_compile_definitions(emcast_tests PRIVATE _USE_MATH_DEFINES)

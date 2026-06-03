@@ -70,6 +70,12 @@ checked twice: a header CRC and a payload CRC.
 - **`write_wav` / `read_wav`** — 16-bit PCM mono WAV I/O via dr_wav.
 - **`play_audio` / `record_audio`** — real speaker/microphone I/O via miniaudio.
 
+### `analysis.hpp` — visualization
+`compute_spectrogram` produces a Hann-windowed STFT magnitude grid;
+`spectrogram_to_rgb` / `write_spectrogram_png` colormap it to an image (via
+stb_image_write). The `emcast spectrogram` command and the browser viewer in
+`demo/` build on this.
+
 ### `emcast.hpp` — SDK facade
 `Transmitter` and `Receiver` compose the layers into one-call file↔waveform
 operations, plus `read_file` / `write_file` helpers.
