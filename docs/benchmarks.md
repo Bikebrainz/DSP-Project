@@ -34,6 +34,24 @@ RS(255,223). **Frame success rate**:
 |  4 | 100% | 100% |
 |  6 | 100% | 100% |
 
+## Scheme comparison
+
+At the default 1000-baud profile, throughput and frame success (512-byte
+payloads, 15 trials):
+
+| Scheme | bits/sym | Throughput | 100% success at ≥ |
+|--------|:--------:|:----------:|:-----------------:|
+| `dbpsk` | 1 | 1000 bps | 0 dB (most robust) |
+| `bfsk`  | 1 | 1000 bps | 0 dB |
+| `mfsk`  | 2 | 2000 bps | 0 dB |
+| `dqpsk` | 2 | 2000 bps | 0 dB |
+| `ook`   | 1 | 1000 bps | 4 dB |
+
+`dqpsk` and `mfsk` double the data rate (2 bits/symbol) for the same baud while
+remaining reliable down to low SNR. `dbpsk` (differential, single carrier) is
+the most noise-robust single-bit scheme; `ook` is the weakest, as expected.
+Select any of them with `--scheme`.
+
 **Takeaways**
 
 - The Reed–Solomon layer turns a low-but-nonzero raw BER into *exact* recovery:

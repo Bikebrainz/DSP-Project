@@ -3,12 +3,24 @@
 #define EMCAST_SRC_MODEM_DETAIL_HPP
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include "emcast/types.hpp"
 
 namespace emcast {
 namespace detail {
+
+/// A per-offset symbol decoder: given the normalized samples and a start index,
+/// return the decoded bit stream (MSB-first, sync-relative).
+using BitDecoder =
+    std::function<std::vector<std::uint8_t>(const std::vector<Sample>&, std::size_t)>;
+
+/// Standard receiver timing search: normalize, detect the signal start, try
+/// symbol-timing offsets, and for each run `decode` then look for the sync
+/// marker. Returns the first frame found, or empty.
+Bytes search_and_pack(const Samples& samples, const ModemConfig& cfg,
+                      std::uint32_t sync_word, const BitDecoder& decode);
 
 /// Expand bytes to bits, MSB first.
 std::vector<std::uint8_t> bytes_to_bits(const Bytes& bytes);

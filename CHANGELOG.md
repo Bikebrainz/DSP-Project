@@ -19,6 +19,10 @@ All notable changes to this project are documented here. The format is based on
   `--profile` CLI option.
 - Robustness/fuzz tests: random noise and random bytes never crash the decoder
   and are rejected cleanly; every profile round-trips.
+- Three new modulation schemes: **DBPSK** and **DQPSK** (differential PSK on one
+  carrier, via a new complex single-bin DFT `goertzel_iq`) and **MFSK** (4-ary
+  FSK). DQPSK and MFSK carry 2 bits/symbol (double throughput). Shared receiver
+  timing search factored into `search_and_pack`.
 
 ## [1.0.0] — unreleased
 

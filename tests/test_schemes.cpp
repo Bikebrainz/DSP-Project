@@ -29,13 +29,30 @@ bool roundtrip(Scheme scheme, const Bytes& payload, double snr_db, std::uint32_t
 }  // namespace
 
 TEST_CASE("Scheme name round-trips through string conversion", "[scheme]") {
-    for (Scheme s : {Scheme::Bfsk, Scheme::Ook}) {
+    for (Scheme s : {Scheme::Bfsk, Scheme::Ook, Scheme::Dbpsk, Scheme::Dqpsk, Scheme::Mfsk}) {
         Scheme parsed;
         REQUIRE(emcast::scheme_from_string(emcast::to_string(s), parsed));
         REQUIRE(parsed == s);
     }
     Scheme dummy;
     REQUIRE_FALSE(emcast::scheme_from_string("nope", dummy));
+}
+
+TEST_CASE("Every scheme round-trips noiselessly", "[scheme]") {
+    std::mt19937 rng(40);
+    Bytes payload = random_bytes(rng, 300);
+    for (Scheme s : {Scheme::Bfsk, Scheme::Ook, Scheme::Dbpsk, Scheme::Dqpsk, Scheme::Mfsk}) {
+        INFO("scheme = " << emcast::to_string(s));
+        REQUIRE(roundtrip(s, payload, 1e9, 0));
+    }
+}
+
+TEST_CASE("PSK and MFSK survive a clean-ish noisy channel", "[scheme]") {
+    std::mt19937 rng(41);
+    Bytes payload = random_bytes(rng, 256);
+    REQUIRE(roundtrip(Scheme::Dbpsk, payload, 14.0, 1));
+    REQUIRE(roundtrip(Scheme::Dqpsk, payload, 18.0, 2));
+    REQUIRE(roundtrip(Scheme::Mfsk, payload, 16.0, 3));
 }
 
 TEST_CASE("BFSK round-trips noiselessly and in noise", "[scheme][bfsk]") {

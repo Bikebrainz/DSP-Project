@@ -18,10 +18,20 @@ Each bit is one symbol, held for `samples_per_symbol` samples (default 48 →
 symbol depends on the scheme:
 
 - **BFSK** (default): a `1` is the **mark** tone (default 3000 Hz), a `0` is the
-  **space** tone (default 2000 Hz).
+  **space** tone (default 2000 Hz). 1 bit/symbol.
 - **OOK**: the mark tone is gated **on** for a `1` and **off** for a `0`.
+  1 bit/symbol.
+- **DBPSK**: one carrier (mark tone); a `1` flips the carrier phase by π
+  relative to the previous symbol, a `0` keeps it. Differential, so no carrier
+  recovery is needed. 1 bit/symbol.
+- **DQPSK**: one carrier; each symbol's phase step (Gray-coded, one of
+  0/π2/π/3π2) carries a dibit. 2 bits/symbol (double rate).
+- **MFSK**: four tones at `freq_space + i·(freq_mark−freq_space)`, `i=0..3`;
+  the strongest tone selects the symbol. 2 bits/symbol (double rate).
 
-Both ends must use the same scheme (`--scheme`).
+Differential schemes drop the first symbol (no prior reference); it falls in the
+preamble, so framing is unaffected. Both ends must use the same scheme
+(`--scheme`).
 
 ## Byte-level message (application layer)
 

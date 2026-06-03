@@ -2,6 +2,7 @@
 #ifndef EMCAST_MODEM_HPP
 #define EMCAST_MODEM_HPP
 
+#include <complex>
 #include <memory>
 #include <string>
 
@@ -14,10 +15,18 @@ namespace emcast {
 double goertzel_power(const Sample* samples, std::size_t n, double freq,
                       double sample_rate);
 
+/// Complex single-bin amplitude (one DFT bin) at `freq`: magnitude is tone
+/// strength, argument is tone phase. Used by the differential PSK demodulators.
+std::complex<double> goertzel_iq(const Sample* samples, std::size_t n, double freq,
+                                 double sample_rate);
+
 /// Available modulation schemes.
 enum class Scheme {
-    Bfsk,  ///< Binary frequency-shift keying (robust; the default).
-    Ook,   ///< On-off keying (one tone gated on/off; simpler, less robust).
+    Bfsk,   ///< Binary frequency-shift keying (robust; the default). 1 bit/sym.
+    Ook,    ///< On-off keying (one tone gated on/off; simpler). 1 bit/sym.
+    Dbpsk,  ///< Differential BPSK (single carrier, phase-difference). 1 bit/sym.
+    Dqpsk,  ///< Differential QPSK (4-phase). 2 bits/sym (double throughput).
+    Mfsk,   ///< 4-ary FSK (four tones). 2 bits/sym (double throughput).
 };
 
 const char* to_string(Scheme scheme);
@@ -67,6 +76,35 @@ public:
 class Ook final : public Modem {
 public:
     explicit Ook(const ModemConfig& cfg = {}) : Modem(cfg) {}
+    Samples modulate(const Bytes& frame_bytes) const override;
+    Bytes demodulate(const Samples& samples) const override;
+};
+
+/// Differential binary phase-shift keying on a single carrier (freq_mark): a 1
+/// flips the carrier phase by pi relative to the previous symbol, a 0 keeps it.
+/// Differential detection needs no absolute carrier/phase recovery.
+class Dbpsk final : public Modem {
+public:
+    explicit Dbpsk(const ModemConfig& cfg = {}) : Modem(cfg) {}
+    Samples modulate(const Bytes& frame_bytes) const override;
+    Bytes demodulate(const Samples& samples) const override;
+};
+
+/// Differential quaternary PSK: each symbol carries 2 bits as one of four
+/// phase steps (Gray-coded), doubling throughput versus DBPSK.
+class Dqpsk final : public Modem {
+public:
+    explicit Dqpsk(const ModemConfig& cfg = {}) : Modem(cfg) {}
+    Samples modulate(const Bytes& frame_bytes) const override;
+    Bytes demodulate(const Samples& samples) const override;
+};
+
+/// 4-ary FSK: four tones (freq_space + i*(freq_mark-freq_space), i=0..3) carry
+/// 2 bits per symbol via non-coherent energy detection. Doubles throughput
+/// versus BFSK at the cost of bandwidth.
+class Mfsk final : public Modem {
+public:
+    explicit Mfsk(const ModemConfig& cfg = {}) : Modem(cfg) {}
     Samples modulate(const Bytes& frame_bytes) const override;
     Bytes demodulate(const Samples& samples) const override;
 };

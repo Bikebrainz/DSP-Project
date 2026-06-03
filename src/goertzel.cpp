@@ -28,4 +28,18 @@ double goertzel_power(const Sample* samples, std::size_t n, double freq,
     return s_prev2 * s_prev2 + s_prev * s_prev - coeff * s_prev * s_prev2;
 }
 
+std::complex<double> goertzel_iq(const Sample* samples, std::size_t n, double freq,
+                                 double sample_rate) {
+    // Direct single-bin DFT: re = sum x cos, im = -sum x sin.
+    const double w = 2.0 * M_PI * freq / sample_rate;
+    double re = 0.0;
+    double im = 0.0;
+    for (std::size_t i = 0; i < n; ++i) {
+        const double x = static_cast<double>(samples[i]);
+        re += x * std::cos(w * static_cast<double>(i));
+        im -= x * std::sin(w * static_cast<double>(i));
+    }
+    return {re, im};
+}
+
 }  // namespace emcast
