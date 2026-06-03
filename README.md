@@ -68,6 +68,20 @@ best over the air), or `fast` (2000 baud, needs a cleaner link).
 emcast send photo.jpg --profile robust --out signal.wav
 ```
 
+### Visualize
+
+Render a spectrogram of any emcast waveform to a PNG:
+
+```bash
+emcast send photo.jpg --scheme mfsk --out signal.wav
+emcast spectrogram signal.wav --out spectrogram.png
+```
+
+You can clearly see the alternating preamble, the sync marker and the data
+region in the result. There is also a zero-dependency browser viewer at
+[`demo/index.html`](demo/index.html): open it and drop in a `.wav` to see its
+waveform and a live spectrogram (all computed client-side).
+
 ### Use the CLI
 
 ```bash
@@ -83,6 +97,9 @@ emcast loopback photo.jpg --snr 8
 
 # Inspect a waveform and its embedded frame.
 emcast info signal.wav
+
+# Render a spectrogram of a waveform to a PNG.
+emcast spectrogram signal.wav --out spectrogram.png
 
 # Transmit over the air: run the receiver on one machine, transmit on another.
 emcast rx --out recovered.bin --seconds 30      # start listening
