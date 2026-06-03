@@ -13,6 +13,12 @@ All notable changes to this project are documented here. The format is based on
 - `emcast_bench` BER-vs-SNR benchmark tool (CSV output) and
   `docs/benchmarks.md` with representative results.
 - Round-trip tests for every scheme.
+- CMake `install()` + exported package config so downstream projects can
+  `find_package(emcast)` and link `emcast::emcast`; CPack ZIP packaging.
+- Modem profiles (`balanced`/`robust`/`fast`) as `ModemConfig` presets and a
+  `--profile` CLI option.
+- Robustness/fuzz tests: random noise and random bytes never crash the decoder
+  and are rejected cleanly; every profile round-trips.
 
 ## [1.0.0] — unreleased
 
