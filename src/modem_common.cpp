@@ -11,19 +11,19 @@ const char* to_string(Scheme scheme) {
     switch (scheme) {
         case Scheme::Bfsk: return "bfsk";
         case Scheme::Ook: return "ook";
+        case Scheme::Dbpsk: return "dbpsk";
+        case Scheme::Dqpsk: return "dqpsk";
+        case Scheme::Mfsk: return "mfsk";
     }
     return "unknown";
 }
 
 bool scheme_from_string(const std::string& name, Scheme& out) {
-    if (name == "bfsk") {
-        out = Scheme::Bfsk;
-        return true;
-    }
-    if (name == "ook") {
-        out = Scheme::Ook;
-        return true;
-    }
+    if (name == "bfsk") { out = Scheme::Bfsk; return true; }
+    if (name == "ook") { out = Scheme::Ook; return true; }
+    if (name == "dbpsk") { out = Scheme::Dbpsk; return true; }
+    if (name == "dqpsk") { out = Scheme::Dqpsk; return true; }
+    if (name == "mfsk") { out = Scheme::Mfsk; return true; }
     return false;
 }
 
@@ -31,6 +31,9 @@ std::unique_ptr<Modem> make_modem(Scheme scheme, const ModemConfig& cfg) {
     switch (scheme) {
         case Scheme::Bfsk: return std::make_unique<Bfsk>(cfg);
         case Scheme::Ook: return std::make_unique<Ook>(cfg);
+        case Scheme::Dbpsk: return std::make_unique<Dbpsk>(cfg);
+        case Scheme::Dqpsk: return std::make_unique<Dqpsk>(cfg);
+        case Scheme::Mfsk: return std::make_unique<Mfsk>(cfg);
     }
     return std::make_unique<Bfsk>(cfg);
 }
@@ -91,6 +94,23 @@ std::size_t detect_start(const std::vector<Sample>& norm, std::size_t sps) {
     }
     if (s0 >= sps) s0 -= sps;  // back off so a slightly late window can't clip
     return s0;
+}
+
+Bytes search_and_pack(const Samples& samples, const ModemConfig& cfg,
+                      std::uint32_t sync_word, const BitDecoder& decode) {
+    const std::size_t sps = cfg.samples_per_symbol;
+    if (samples.size() < sps * 2) return {};
+    std::vector<Sample> norm = normalize(samples, sps);
+    const std::size_t s0 = detect_start(norm, sps);
+    const std::size_t fine_step = std::max<std::size_t>(1, sps / 16);
+    for (std::size_t fine = 0; fine < sps; fine += fine_step) {
+        const std::size_t start = s0 + fine;
+        if (start + sps > norm.size()) break;
+        std::vector<std::uint8_t> bits = decode(norm, start);
+        Bytes frame = pack_after_sync(bits, sync_word);
+        if (!frame.empty()) return frame;
+    }
+    return {};
 }
 
 Bytes pack_after_sync(const std::vector<std::uint8_t>& bits, std::uint32_t sync_word) {

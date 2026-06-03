@@ -39,6 +39,8 @@ add_library(emcast STATIC
   src/modem_common.cpp
   src/bfsk.cpp
   src/ook.cpp
+  src/psk.cpp
+  src/mfsk.cpp
   src/awgn.cpp
   src/wav_channel.cpp
   src/impl_dr_wav.cpp

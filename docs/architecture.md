@@ -55,6 +55,14 @@ checked twice: a header CRC and a payload CRC.
   The receiver thresholds per-symbol energy adaptively. Simpler but amplitude
   sensitive, so it needs ~8 dB more SNR than BFSK (see
   [`benchmarks.md`](benchmarks.md)).
+- **`Dbpsk` / `Dqpsk`** — differential phase-shift keying on one carrier. The
+  data is the phase *change* between consecutive symbols, recovered with a
+  complex single-bin DFT (`goertzel_iq`) and a symbol-to-symbol product, so no
+  absolute carrier/phase recovery is needed. DQPSK carries 2 bits/symbol.
+- **`Mfsk`** — 4-ary FSK: four tones, 2 bits/symbol, non-coherent argmax energy
+  detection. The shared timing search (`search_and_pack` in `modem_common`) is
+  reused by all phase/multitone schemes; each only supplies its per-symbol
+  decoder.
 
 ### `channel.hpp` — transports
 - **`add_awgn`** — additive white Gaussian noise at a target SNR; deterministic

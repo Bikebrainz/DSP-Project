@@ -75,8 +75,8 @@ emcast send photo.jpg --profile robust --out signal.wav
 emcast send  photo.jpg --out signal.wav
 emcast recv  signal.wav --out recovered.jpg
 
-# Choose a modulation scheme (bfsk = default/robust, ook = simpler).
-emcast send  photo.jpg --scheme ook --out signal.wav
+# Choose a modulation scheme (bfsk|dbpsk|dqpsk|mfsk|ook).
+emcast send  photo.jpg --scheme dqpsk --out signal.wav   # 2 bits/symbol
 
 # Prove reliability over a simulated noisy channel (encode → AWGN → decode).
 emcast loopback photo.jpg --snr 8
@@ -113,7 +113,7 @@ if (rx.decode_samples(in, out) == emcast::DecodeStatus::Ok) {
 |-------|--------------|
 | **Framing** | Wraps the payload with a magic marker, version, file name, length, a header CRC-32 and a payload CRC-32. |
 | **FEC** | Reed–Solomon over GF(2⁸). The default RS(255,223) corrects up to **16 corrupted bytes in every 255-byte block**. |
-| **Modulation** | Pluggable schemes behind one interface: **BFSK** (default — mark/space tones, robust) and **OOK** (gated single tone). Default 1000 baud at 48 kHz; select with `--scheme`. |
+| **Modulation** | Five pluggable schemes behind one interface: **BFSK** (default), **DBPSK** (differential PSK, most robust), **DQPSK** & **MFSK** (2 bits/symbol — double throughput), and **OOK**. Default 1000 baud at 48 kHz; select with `--scheme`. |
 | **Sync** | An alternating preamble for gain/timing, then a 32-bit CCSDS sync marker located by correlation. |
 | **Demod** | Goertzel tone-power detection per symbol (cheaper than an FFT), with signal-start detection and symbol-timing search for live audio. |
 
