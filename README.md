@@ -44,6 +44,30 @@ ctest --test-dir build -C Release      # run the test suite
 On Windows, run the above from a *Developer PowerShell for VS 2022* (or use the
 `msvc` CMake preset).
 
+### Install & integrate
+
+```bash
+cmake --install build --prefix /your/prefix      # lib + headers + CLI + cmake package
+cpack --config build/CPackConfig.cmake           # build a distributable ZIP
+```
+
+Then consume it from another CMake project:
+
+```cmake
+find_package(emcast REQUIRED)
+target_link_libraries(your_app PRIVATE emcast::emcast)
+```
+
+### Profiles
+
+Pick a ready-made trade-off with `--profile` (overrides the symbol-level
+options): `balanced` (default, 1000 baud), `robust` (500 baud, longer preamble —
+best over the air), or `fast` (2000 baud, needs a cleaner link).
+
+```bash
+emcast send photo.jpg --profile robust --out signal.wav
+```
+
 ### Use the CLI
 
 ```bash

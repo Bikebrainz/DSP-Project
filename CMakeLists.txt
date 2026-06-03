@@ -47,7 +47,9 @@ add_library(emcast STATIC
   src/emcast.cpp)
 add_library(emcast::emcast ALIAS emcast)
 
-target_include_directories(emcast PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(emcast PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
 target_include_directories(emcast PRIVATE ${miniaudio_SOURCE_DIR} ${drlibs_SOURCE_DIR})
 
 if(MSVC)
@@ -57,12 +59,13 @@ else()
   target_compile_options(emcast PRIVATE -Wall -Wextra)
 endif()
 
-# Platform audio backends required by miniaudio.
+# Platform audio backends required by miniaudio. PUBLIC so consumers that link
+# the static emcast library inherit them at final link time.
 if(UNIX AND NOT APPLE)
   find_package(Threads REQUIRED)
-  target_link_libraries(emcast PRIVATE Threads::Threads ${CMAKE_DL_LIBS} m)
+  target_link_libraries(emcast PUBLIC Threads::Threads ${CMAKE_DL_LIBS} m)
 elseif(APPLE)
-  target_link_libraries(emcast PRIVATE
+  target_link_libraries(emcast PUBLIC
     "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox")
 endif()
 
@@ -103,10 +106,50 @@ if(EMCAST_BUILD_TESTS)
     tests/test_frame.cpp
     tests/test_goertzel.cpp
     tests/test_roundtrip.cpp
-    tests/test_schemes.cpp)
+    tests/test_schemes.cpp
+    tests/test_robustness.cpp)
   target_link_libraries(emcast_tests PRIVATE emcast::emcast Catch2::Catch2WithMain)
   if(MSVC)
     target_compile_definitions(emcast_tests PRIVATE _USE_MATH_DEFINES)
   endif()
   catch_discover_tests(emcast_tests)
 endif()
+
+# ---- Install / packaging ----------------------------------------------------
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(TARGETS emcast EXPORT emcastTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY include/emcast DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+if(EMCAST_BUILD_CLI)
+  install(TARGETS emcast_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+
+install(EXPORT emcastTargets
+  FILE emcastTargets.cmake
+  NAMESPACE emcast::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/emcast)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/emcastConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/emcastConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/emcast)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/emcastConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/emcastConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/emcastConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/emcast)
+
+set(CPACK_PACKAGE_NAME emcast)
+set(CPACK_PACKAGE_VENDOR "Bikebrainz")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Data-over-signal transmission toolkit")
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+set(CPACK_GENERATOR "ZIP")
+include(CPack)

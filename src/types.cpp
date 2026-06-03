@@ -2,6 +2,22 @@
 
 namespace emcast {
 
+bool profile_from_string(const std::string& name, ModemConfig& out) {
+    if (name == "balanced") {
+        out = ModemConfig::balanced();
+        return true;
+    }
+    if (name == "robust") {
+        out = ModemConfig::robust();
+        return true;
+    }
+    if (name == "fast") {
+        out = ModemConfig::fast();
+        return true;
+    }
+    return false;
+}
+
 const char* to_string(DecodeStatus status) {
     switch (status) {
         case DecodeStatus::Ok: return "ok";

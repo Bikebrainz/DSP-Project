@@ -18,6 +18,7 @@ namespace {
 // Physical-layer options shared by every subcommand.
 struct ModemOptions {
     std::string scheme = "bfsk";
+    std::string profile;  // empty = use the individual options below
     std::uint32_t sample_rate = 48000;
     std::uint32_t samples_per_symbol = 48;
     double freq_space = 2000.0;
@@ -31,6 +32,17 @@ struct ModemOptions {
         cfg.freq_space = freq_space;
         cfg.freq_mark = freq_mark;
         cfg.preamble_bits = preamble;
+        if (!profile.empty()) {
+            // A profile overrides the symbol-level settings (keeps sample_rate).
+            emcast::ModemConfig p;
+            if (!emcast::profile_from_string(profile, p))
+                throw emcast::Error("unknown profile: " + profile +
+                                    " (expected balanced|robust|fast)");
+            cfg.samples_per_symbol = p.samples_per_symbol;
+            cfg.freq_space = p.freq_space;
+            cfg.freq_mark = p.freq_mark;
+            cfg.preamble_bits = p.preamble_bits;
+        }
         return cfg;
     }
 
@@ -44,6 +56,7 @@ struct ModemOptions {
 
 void add_modem_options(CLI::App* app, ModemOptions& o) {
     app->add_option("--scheme", o.scheme, "Modulation scheme (bfsk|ook)")->capture_default_str();
+    app->add_option("--profile", o.profile, "Preset (balanced|robust|fast); overrides symbol options");
     app->add_option("--sample-rate", o.sample_rate, "Sample rate (Hz)")->capture_default_str();
     app->add_option("--sps", o.samples_per_symbol, "Samples per symbol")->capture_default_str();
     app->add_option("--freq-space", o.freq_space, "Tone for bit 0 (Hz)")->capture_default_str();
